@@ -1,0 +1,9 @@
+.vscode
+.idea
+__pycache__
+data/images/*
+data/landmarks/*
+venv
+wsl-venv
+!.keep
+models/*
