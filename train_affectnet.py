@@ -10,9 +10,20 @@ from jett.modules import JETT, JETTBuilder
 from jett.train import JETTConfigs, JETTTrainParams, Metrics, JETTTrainer
 from jett.dataset.affectnet_mediapipe import NUM_POINTS
 
+# Training Hyperparam
 BATCH_SIZE = 32
+LR = 1e-4
+WEIGHT_DECAY = 1e-4
+NUM_EPOCHS = 60
+
+# Model Architecture
 DIM_MODEL = 256
+NUM_HEADS = 4
 NUM_CLASSES = 8
+NUM_LAYERS = 4
+NEAREST_K = 10
+
+# Device
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -121,21 +132,17 @@ if __name__ == "__main__":
     classifier = nn.Linear(NUM_POINTS * DIM_MODEL, NUM_CLASSES)
 
     model = JETTBuilder().dim_model(DIM_MODEL) \
-        .num_heads(4) \
-        .nearest_k(5) \
+        .num_heads(NUM_HEADS) \
+        .nearest_k(NEAREST_K) \
         .out_module(classifier) \
-        .num_layers(3) \
+        .num_layers(NUM_LAYERS) \
         .drop_rate(0.1) \
         .build()
 
     # Configure Training
-    configs = JETTConfigs(
-        batch_size=BATCH_SIZE,
-        lr=1e-4,
-        weight_decay=1e-4,
-        epochs=3)
+    configs = JETTConfigs(epochs=NUM_EPOCHS)
 
-    optimizer = optim.AdamW(model.parameters(), lr=configs.lr, weight_decay=configs.weight_decay)
+    optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=configs.epochs)
 
     train_params = JETTTrainParams(
@@ -143,8 +150,8 @@ if __name__ == "__main__":
         valid_loader=valid_loader,
         criterion=nn.CrossEntropyLoss(),
         optimizer=optimizer,
-        device=DEVICE,
-        scheduler=scheduler)
+        scheduler=scheduler,
+        device=DEVICE)
 
     trainer = JETTTrainer(
         model=model,

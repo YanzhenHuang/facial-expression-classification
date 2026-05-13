@@ -24,9 +24,6 @@ if not logger.handlers:
 
 @dataclass
 class JETTConfigs:
-    batch_size: int
-    lr: float
-    weight_decay: float
     epochs: int
 
 
