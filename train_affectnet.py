@@ -10,10 +10,17 @@ from jett.modules import JETT, JETTBuilder
 from jett.train import JETTConfigs, JETTTrainParams, Metrics, JETTTrainer
 from jett.dataset.affectnet_mediapipe import NUM_POINTS
 
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 DIM_MODEL = 256
 NUM_CLASSES = 8
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+class AffectNetMetrics(Metrics):
+
+    def print(self):
+        loss, acc, uar = self.values
+        return f"{self.identity}: loss={loss:.2f}, acc={acc:.2f}%, uar={uar:.2f}%"
 
 
 def calculate_uar(y_true, y_pred, num_classes):
@@ -58,7 +65,9 @@ def train_one_epoch(_model: JETT, _train_params: JETTTrainParams):
     avg_loss = tot_loss / len(train_loader)
     avg_acc = 100 * correct / total
     uar = calculate_uar(all_labels, all_preds, NUM_CLASSES)
-    return Metrics(primary_key=2, primary_name="UAR", values=[avg_loss, avg_acc, uar])
+    return AffectNetMetrics(
+        identity="Train", keys=["loss", "accuracy", "UAR"],
+        values=[avg_loss, avg_acc, uar], primary_key=2)
 
 
 def validate_one_epoch(_model: JETT, _train_params: JETTTrainParams):
@@ -91,10 +100,13 @@ def validate_one_epoch(_model: JETT, _train_params: JETTTrainParams):
     avg_loss = tot_loss / len(valid_loader)
     avg_acc = 100 * correct / total
     uar = calculate_uar(all_labels, all_preds, NUM_CLASSES)
-    return Metrics(primary_key=2, primary_name="UAR", values=[avg_loss, avg_acc, uar])
+    return AffectNetMetrics(
+        identity="Valid", keys=["loss", "accuracy", "UAR"],
+        values=[avg_loss, avg_acc, uar], primary_key=2)
 
 
 if __name__ == "__main__":
+    # Prepare Dataset
     file_loader = FileLoader()
     train_data, train_labels = file_loader.load_split("Train")
     valid_data, valid_labels = file_loader.load_split("Test")
@@ -105,6 +117,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
+    # Build up model structure
     classifier = nn.Linear(NUM_POINTS * DIM_MODEL, NUM_CLASSES)
 
     model = JETTBuilder().dim_model(DIM_MODEL) \
@@ -115,11 +128,12 @@ if __name__ == "__main__":
         .drop_rate(0.1) \
         .build()
 
+    # Configure Training
     configs = JETTConfigs(
         batch_size=BATCH_SIZE,
         lr=1e-4,
         weight_decay=1e-4,
-        epochs=60)
+        epochs=3)
 
     optimizer = optim.AdamW(model.parameters(), lr=configs.lr, weight_decay=configs.weight_decay)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=configs.epochs)
@@ -134,11 +148,11 @@ if __name__ == "__main__":
 
     trainer = JETTTrainer(
         model=model,
-        save_target="models/affectnet_jett.pth",
+        save_target="models/affectnet_jett",
         configs=configs,
         train_params=train_params,
         train_one_epoch=train_one_epoch,
         valid_one_epoch=validate_one_epoch,
         is_better=lambda best, cur_uar: cur_uar > best)
 
-    trainer.train()
+    trainer.train().print_result()
