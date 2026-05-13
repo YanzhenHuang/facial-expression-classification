@@ -1,3 +1,4 @@
+import os
 import random
 from pathlib import Path
 from typing import DefaultDict
@@ -7,11 +8,16 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset
 
-from faceformer import NUM_POINTS
+from proj import project_root
 from utils import recursive_search
 
 LABEL_NAMES = {word: i for i, word in
-               enumerate(["anger", "contempt", "disgust", "fear", "happy", "neutral", "sad", "surprise"])}
+               enumerate([
+                   "anger", "contempt", "disgust", "fear",
+                   "happy", "neutral", "sad", "surprise"])}
+
+NUM_POINTS = 478
+
 
 class FileLoader:
 
@@ -40,7 +46,11 @@ class FileLoader:
         self.labeled_datalist[LABEL_NAMES[label.name]].append(aligned_landmarks)
 
     def load_split(self, split: str):
-        recursive_search(f"../data/landmarks/{split}", self._load)
+        """
+        Load the entire split with all the labels.
+        Generate two lists: Data list, and label list.
+        """
+        recursive_search(os.path.join(str(project_root), f"data/landmarks/{split}"), self._load)
         final_datalist = []
         final_labels = []
 
