@@ -18,7 +18,7 @@ class GraphEmbedding(nn.Module):
         self.dim_model = dim_model
 
         # Determines the distribution of PEs on a token.
-        # The first 3/4 are for x and y, and the last 1/4 is for z.
+        # The first 3/8 and last 3/8 are for x and y, and the middle 1/4 is for z.
         self.dim_xy = self.dim_model * 3 // 8
         self.dim_z = self.dim_model - 2 * self.dim_xy
 
@@ -46,7 +46,7 @@ class GraphEmbedding(nn.Module):
         pe_x = torch.sin(x.unsqueeze(-1) * self.freq_bands_xy)
         pe_y = torch.cos(y.unsqueeze(-1) * self.freq_bands_xy)
         pe_z = torch.sin(z.unsqueeze(-1) * self.freq_bands_z)
-        coord_pe = torch.cat([pe_x, pe_y, pe_z], dim=-1)
+        coord_pe = torch.cat([pe_x, pe_z, pe_y], dim=-1)
 
         # coord projection: (B, N, 3) --project--> (B, N, dim_model)
         coord_proj = self.coord_proj(coords)
@@ -230,7 +230,6 @@ class JETTBuilder:
             num_heads=self._num_heads,
             nearest_k=self._K)
 
-        # noinspection PyTypeChecker
         jets = ModuleList([
             JETransformerLayer(
                 dim_model=self._dim_model,

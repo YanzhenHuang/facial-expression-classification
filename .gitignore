@@ -1,8 +1,7 @@
 .vscode
 .idea
 __pycache__
-data/images/*
-data/landmarks/*
+data/*
 venv
 wsl-venv
 !.keep

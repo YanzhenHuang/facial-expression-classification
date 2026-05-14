@@ -38,6 +38,7 @@ class JETTTrainParams:
 
 
 class Metrics:
+
     def __init__(self, identity: str, keys: List[str], values: List[float], primary_key: int):
         """
         The output metrics of `train_one_epoch` and `valid_one_epoch` function.
@@ -46,7 +47,7 @@ class Metrics:
         :param values: The actual output value.
         """
         self.identity = identity
-        self.keys = keys
+        self.keys: List[str] = keys
         self.primary_key = primary_key
         self.values: List[float] = values
 
@@ -93,7 +94,7 @@ class JETTTrainer:
         self.model.to(self.train_params.device)
         logger.info("Train start!")
         best: float = 0.0
-        # noinspection PyTypeChecker
+
         for epoch in range(1, self.configs.epochs + 1):
             logger.info(f"Epoch {epoch}")
             train_metrics: Metrics = self.train_one_epoch(self.model, self.train_params)
@@ -152,5 +153,3 @@ class JETTTrainer:
             plt.close()
 
             logger.info(f"Saved {key} comparison graph to: {save_path}")
-
-
